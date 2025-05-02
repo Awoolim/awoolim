@@ -67,7 +67,7 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-async function thing() {
+async function thing(): Promise<void> {
   // 1. .tflite 모델 로드
   const model = await tflite.loadTFLiteModel('model/my_model.tflite')
 
