@@ -2,8 +2,8 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import * as tflite from '@tensorflow/tfjs-tflite'
 import * as tf from '@tensorflow/tfjs'
+import * as tflite from 'tfjs-tflite-node'
 
 function createWindow(): void {
   // Create the browser window.
