@@ -5,7 +5,8 @@ import icon from '../../resources/icon.png?asset'
 import * as tf from '@tensorflow/tfjs'
 import * as tflite from 'tfjs-tflite-node'
 import {GoogleGenAI} from '@google/genai';
-
+import os from 'os'
+var isStarted = 0;
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -51,12 +52,11 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
+  isStarted = os.uptime();
   // IPC test
   ipcMain.on('ping', () => read_images())
   ipcMain.on('two', () => mmo())
-  
-
+  ipcMain.on('three', () => three())
   createWindow()
 
   app.on('activate', function () {
@@ -70,6 +70,16 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
+async function three() {
+  //console log how much time is passed since the app started
+  const uptime = os.uptime() - isStarted;
+  console.log(`App has been running for ${uptime} seconds`)
+  //console log how much time is passed since the app started in hours, minutes and seconds
+  const hours = Math.floor(uptime / 3600)
+  const minutes = Math.floor((uptime % 3600) / 60)
+  const seconds = Math.floor(uptime % 60)
+  console.log(`App has been running for ${hours} hours, ${minutes} minutes and ${seconds} seconds`)
+}  
 async function mmo() {
   
   const ai = new GoogleGenAI({apiKey: "AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g"});
