@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import * as tf from '@tensorflow/tfjs'
 import * as tflite from 'tfjs-tflite-node'
+import {GoogleGenAI} from '@google/genai';
 
 function createWindow(): void {
   // Create the browser window.
@@ -52,7 +53,9 @@ app.whenReady().then(() => {
   })
 
   // IPC test
-  ipcMain.on('ping', () => thing())
+  ipcMain.on('ping', () => read_images())
+  ipcMain.on('two', () => mmo())
+  
 
   createWindow()
 
@@ -67,7 +70,21 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-async function thing(): Promise<void> {
+async function mmo() {
+  
+  const ai = new GoogleGenAI({apiKey: "AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g"});
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash-001',
+    contents: 'Why is the sky blue?',
+  });
+  console.log(response.text);
+  
+  
+  
+
+}
+async function read_images(): Promise<void> {
   // 1. .tflite 모델 로드
   const model = await tflite.loadTFLiteModel(join(__dirname, '../../models/model.tflite'))
 

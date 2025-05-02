@@ -3,6 +3,7 @@
   import electronLogo from './assets/electron.svg'
 
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const onTest = (): void => window.electron.ipcRenderer.send('two')
 </script>
 
 <img alt="logo" class="logo" src={electronLogo} />
@@ -16,11 +17,11 @@
 <p class="tip">Please  <code>F12</code> to open the devTool</p>
 <div class="actions">
   <div id="test" class="action">
-    <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">Documentation</a>
+    <a target="_blank" rel="noreferrer" on:click={onTest}>Send IPC</a>
   </div>
   <div class="action">
     <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions a11y-missing-attribute-->
-    <a target="_blank" rel="noreferrer" on:click={ipcHandle}>Send IPC</a>
+    <a target="_blank" rel="noreferrer" on:click={ipcHandle}>Send IPC2</a>
   </div>
 </div>
 <Versions />
