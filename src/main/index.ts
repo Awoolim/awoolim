@@ -6,6 +6,7 @@ import * as tf from '@tensorflow/tfjs'
 import * as tflite from 'tfjs-tflite-node'
 import {GoogleGenAI} from '@google/genai';
 import os from 'os'
+
 var isStarted = 0;
 function createWindow(): void {
   // Create the browser window.
@@ -43,7 +44,6 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
   // Default open or close DevTools by F12 in development
@@ -69,7 +69,6 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   app.quit()
 })
-
 async function three() {
   //console log how much time is passed since the app started
   const uptime = os.uptime() - isStarted;
@@ -86,7 +85,7 @@ async function mmo() {
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.0-flash-001',
-    contents: 'Why is the sky blue?',
+    contents: "The user is currently studying on his laptop in bed for 135 minutes. He has a history of cervical disc herniation and turtle neck, and his goal is to reduce his neck pain. He is currently feeling tired, and his last posture feedback was ignored 3 out of 5 times, and the last feedback was not accepted. Today, he maintained good posture 38%, and this week's average is 41%. I wanna rest 10 minutes in every period. How long time is enough for him about one period? 10 minutes? or 1 hour?",
   });
   console.log(response.text);
   
@@ -98,7 +97,7 @@ async function read_images(): Promise<void> {
   // 1. .tflite ëª¨ë¸ ë¡œë“œ
   const model = await tflite.loadTFLiteModel(join(__dirname, '../../models/model.tflite'))
 
-  // 2. ì…ë ¥ í…ì„œ ìƒì„± (ì˜ˆ: 224x224 RGB ì´ë¯¸ì§€)
+  // 2. ?…? ¥ ?…?„œ ?ƒ?„± (?˜ˆ: 224x224 RGB ?´ë¯¸ì??)
   const input = tf.tensor(new Uint8Array(160 * 160 * 3), [1, 160, 160, 3])
 
   // 3. ì¶”ë¡ 

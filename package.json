@@ -26,6 +26,7 @@
     "@google/genai": "^0.12.0",
     "@tensorflow/tfjs": "^4.22.0",
     "electron-store": "^10.0.1",
+    "ps-list": "^8.1.1",
     "tfjs-tflite-node": "^0.0.2"
   },
   "devDependencies": {
