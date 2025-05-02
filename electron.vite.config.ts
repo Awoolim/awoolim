@@ -3,7 +3,13 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      rollupOptions: {
+        external: ['electron', 'electron-devtools-installer', 'electron-store','@tensorflow/tfjs-node']
+      }
+    }
+    
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
