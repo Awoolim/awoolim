@@ -2,6 +2,8 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import * as tflite from '@tensorflow/tfjs-tflite'
+import * as tf from '@tensorflow/tfjs'
 
 function createWindow(): void {
   // Create the browser window.
@@ -50,7 +52,7 @@ app.whenReady().then(() => {
   })
 
   // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.on('ping', () => thing())
 
   createWindow()
 
@@ -64,3 +66,21 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   app.quit()
 })
+
+async function thing() {
+  // 1. .tflite 모델 로드
+  const model = await tflite.loadTFLiteModel('model/my_model.tflite')
+
+  // 2. 입력 텐서 생성 (예: 224x224 RGB 이미지)
+  const input = tf.tensor(new Float32Array(224 * 224 * 3), [1, 224, 224, 3])
+
+  // 3. 추론
+  const output = model.predict(input)
+
+  // 4. 결과 출력
+  if (output instanceof tf.Tensor) {
+    output.print()
+  } else {
+    console.log('Output is not a single tensor:', output)
+  }
+}
