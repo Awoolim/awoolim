@@ -26,6 +26,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^0.12.0",
     "@tensorflow/tfjs": "^4.22.0",
+    "consola": "^3.4.2",
     "electron-store": "^10.0.1",
     "ps-list": "^8.1.1",
     "svelte-i18n": "^4.0.1",

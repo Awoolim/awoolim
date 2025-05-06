@@ -1,16 +1,26 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import * as tf from '@tensorflow/tfjs'
 import * as tflite from 'tfjs-tflite-node'
 import Store from 'electron-store'
+import consola from 'consola'
 
 const store = new Store()
 import { GoogleGenAI } from '@google/genai'
 import os from 'os'
 
 let isStarted = 0
+
+let userData: userData = {
+  language: 'en',
+  name: '',
+  age: 0,
+  gender: 'unspecified',
+  conditions: [],
+  goals: []
+}
 
 function createMainWindow(): void {
   // Create the browser window.
@@ -76,7 +86,15 @@ function createSetupWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  consola.box('Awoolim is starting up...')
+  consola.info('App version:', app.getVersion())
+  consola.info('Node version:', process.versions.node)
+  consola.info('Chromium version:', process.versions.chrome)
+  consola.info('Electron version:', process.versions.electron)
+  consola.info('OS version:', process.platform, process.getSystemVersion())
+  consola.info('OS architecture:', process.arch)
+
   electronApp.setAppUserModelId('com.electron')
 
   // Default open or close DevTools by F12 in development
@@ -87,12 +105,19 @@ app.whenReady().then(() => {
   })
   isStarted = os.uptime()
 
-  // if (store.get('initialized') == undefined) {
-  //   createSetupWindow()
-  // } else {
-  //   createMainWindow()
-  // }
-  createMainWindow()
+  if (store.get('userData') == undefined) {
+    consola.warn('User data not found, creating setup window')
+    ipcMain.on('setup-complete', setupComplete)
+
+    createSetupWindow()
+  } else {
+    consola.success('User data found, loading user data')
+    userData = (await store.get('userData')) as userData
+    consola.debug('User data loaded:', userData)
+
+    createMainWindow()
+  }
+
   ipcMain.on('ping', () => read_images())
   ipcMain.on('two', () => mmo())
   ipcMain.on('three', () => three())
@@ -105,8 +130,19 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  consola.info('All windows closed, quitting app')
   app.quit()
 })
+
+function setupComplete(_event: IpcMainEvent, data: userData): void {
+  userData = data
+  store.set('userData', userData)
+  consola.success('User data saved')
+  consola.debug('User data from store:', store.get('userData'))
+  ipcMain.off('setup-complete', setupComplete)
+
+  createMainWindow()
+}
 
 async function three(): Promise<void> {
   //console log how much time is passed since the app started
