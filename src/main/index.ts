@@ -87,11 +87,12 @@ app.whenReady().then(() => {
   })
   isStarted = os.uptime()
 
-  if (store.get('initialized') == undefined) {
-    createSetupWindow()
-  } else {
-    createMainWindow()
-  }
+  // if (store.get('initialized') == undefined) {
+  //   createSetupWindow()
+  // } else {
+  //   createMainWindow()
+  // }
+  createMainWindow()
   ipcMain.on('ping', () => read_images())
   ipcMain.on('two', () => mmo())
   ipcMain.on('three', () => three())
