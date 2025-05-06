@@ -4,9 +4,11 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import * as tf from '@tensorflow/tfjs'
 import * as tflite from 'tfjs-tflite-node'
+import Store from 'electron-store'
 
-function createWindow(): void {
-  // Create the browser window.
+const store = new Store()
+
+function createMainWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -14,7 +16,7 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false
     }
   })
@@ -31,9 +33,38 @@ function createWindow(): void {
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    mainWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/setup/main`)
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(join(__dirname, '../renderer/main/index.html'))
+  }
+}
+
+function createSetupWindow(): void {
+  const setupWindow = new BrowserWindow({
+    width: 900,
+    height: 600,
+    show: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.mjs'),
+      sandbox: false
+    }
+  })
+
+  setupWindow.on('ready-to-show', () => {
+    setupWindow.show()
+  })
+
+  setupWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    setupWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/setup`)
+  } else {
+    setupWindow.loadFile(join(__dirname, '../renderer/setup/index.html'))
   }
 }
 
@@ -54,12 +85,16 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => thing())
 
-  createWindow()
+  if (store.get('initialized') == undefined) {
+    createSetupWindow()
+  } else {
+    createMainWindow()
+  }
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
   })
 })
 

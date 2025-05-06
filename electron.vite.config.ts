@@ -1,5 +1,6 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { join } from 'path'
 
 export default defineConfig({
   main: {
@@ -19,6 +20,14 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
-    plugins: [svelte()]
+    plugins: [svelte()],
+    build: {
+      rollupOptions: {
+        input: {
+          main: join(__dirname, '/src/renderer/main/index.html'),
+          setup: join(__dirname, '/src/renderer/setup/index.html')
+        }
+      }
+    }
   }
 })

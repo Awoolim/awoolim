@@ -13,7 +13,7 @@
   and
   <span class="ts">TypeScript</span>
 </div>
-<p class="tip">Please  <code>F12</code> to open the devTool</p>
+<p class="tip">Please <code>F12</code> to open the devTool</p>
 <div class="actions">
   <div id="test" class="action">
     <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">Documentation</a>
