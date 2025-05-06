@@ -106,18 +106,18 @@ app.whenReady().then(async () => {
   })
   isStarted = os.uptime()
 
-  if (store.get('userData') == undefined) {
-    consola.warn('User data not found, creating setup window')
-    ipcMain.on('setup-complete', setupComplete)
+  // if (store.get('userData') == undefined) {
+  //   consola.warn('User data not found, creating setup window')
+  //   ipcMain.on('setup-complete', setupComplete)
+  //   createSetupWindow()
+  // } else {
+  //   consola.success('User data found, loading user data')
+  //   userData = (await store.get('userData')) as userData
+  //   consola.debug('User data loaded:', userData)
+  //   createMainWindow()
+  // }
 
-    createSetupWindow()
-  } else {
-    consola.success('User data found, loading user data')
-    userData = (await store.get('userData')) as userData
-    consola.debug('User data loaded:', userData)
-
-    createMainWindow()
-  }
+  createMainWindow()
 
   ipcMain.on('ping', () => read_images())
   ipcMain.on('two', () => mmo())
