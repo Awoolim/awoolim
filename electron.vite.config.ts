@@ -6,10 +6,14 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
-        external: ['electron', 'electron-devtools-installer', 'electron-store','@tensorflow/tfjs-node']
+        external: [
+          'electron',
+          'electron-devtools-installer',
+          'electron-store',
+          '@tensorflow/tfjs-node'
+        ]
       }
     }
-    
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
