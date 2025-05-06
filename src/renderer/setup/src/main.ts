@@ -1,4 +1,5 @@
 import { mount } from 'svelte'
+import './lib/i18n'
 
 import './assets/main.css'
 
