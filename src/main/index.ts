@@ -1,15 +1,16 @@
 import { app, shell, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import { GoogleGenAI } from '@google/genai'
 import * as tf from '@tensorflow/tfjs'
 import * as tflite from 'tfjs-tflite-node'
 import Store from 'electron-store'
 import consola from 'consola'
+import sharp from 'sharp'
+import os from 'os'
+import icon from '../../resources/icon.png?asset'
 
 const store = new Store()
-import { GoogleGenAI } from '@google/genai'
-import os from 'os'
 
 let isStarted = 0
 
@@ -165,21 +166,95 @@ async function mmo(): Promise<void> {
   })
   console.log(response.text)
 }
+function isBentPosture(keypoints: { x: number; y: number; confidence: number }[]): boolean {
+  const MIN_CONFIDENCE = -6.0
 
+  // ?��: �?, ?��?���?, ?��른어�?, 골반, ?��무릎, ?��른무�?
+  const NECK = keypoints[1]
+  const LEFT_SHOULDER = keypoints[3]
+  const RIGHT_SHOULDER = keypoints[4]
+  const MID_HIP = keypoints[7] // ?��?�� 좌우 골반 ?���?
+  const LEFT_KNEE = keypoints[11]
+  const RIGHT_KNEE = keypoints[12]
+
+  if ([NECK, LEFT_SHOULDER, RIGHT_SHOULDER, MID_HIP].some((kp) => kp.confidence < MIN_CONFIDENCE)) {
+    return false
+  }
+
+  // 1. ?���? 좌우 ?��?�� 차이 (y�? 기�??)
+  const shoulderTilt = Math.abs(LEFT_SHOULDER.y - RIGHT_SHOULDER.y)
+
+  // 2. 척추 기울�? (x�? 기�??)
+  const spineLean = Math.abs(NECK.x - MID_HIP.x)
+
+  // 3. �? ?��?���? ?���? (머리 x�? ?���? 중심보다 많이 ?���?)
+  const shoulderMidX = (LEFT_SHOULDER.x + RIGHT_SHOULDER.x) / 2
+  const neckForwardLean = Math.abs(NECK.x - shoulderMidX)
+
+  // 조건 기�????? 경험?��?���? 조정 �??��
+  return (
+    shoulderTilt > 20 || // ?���? ?��?�� 차이 ?��
+    spineLean > 30 || // 척추�? ?��쪽으�? 치우�?
+    neckForwardLean > 25 // 거북�?/고개 ?��?���? ?��?��
+  )
+}
 async function read_images(): Promise<void> {
+  const resizedImageBuffer = await sharp(join(__dirname, '../../resources/1.jpg'))
+    .resize(257, 353) // [W x H] ?��?��?��!
+    .removeAlpha()
+    .raw()
+    .toBuffer()
+
+  // 2. Tensor�? �??�� (shape: [1, 353, 257, 3])
+  const input = tf.tensor(new Uint8Array(resizedImageBuffer), [1, 353, 257, 3])
+
   // 1. .tflite 모델 로드
-  const model = await tflite.loadTFLiteModel(join(__dirname, '../../models/model.tflite'))
+  const model = await tflite.loadTFLiteModel(join(__dirname, '../../resources/model/1.tflite'))
 
   // 2. ?��?�� ?��?�� ?��?�� (?��: 224x224 RGB ?��미�??)
-  const input = tf.tensor(new Uint8Array(160 * 160 * 3), [1, 160, 160, 3])
-
+  console.log('input shape:', input.shape)
   // 3. 추론
   const output = model.predict(input)
+  const heatmapTensor = output.float_heatmaps
+  const transposed = heatmapTensor.transpose([0, 3, 1, 2])
+  const heatmapArray = await transposed.array()
 
-  // 4. 결과 출력
-  if (output instanceof tf.Tensor) {
-    output.print()
+  const [batch, numKeypoints, h, w] = transposed.shape
+  const inputHeight = 353
+  const inputWidth = 257
+
+  const scaleY = inputHeight / h
+  const scaleX = inputWidth / w
+
+  const keypoints: { x: number; y: number; confidence: number }[] = []
+
+  for (let k = 0; k < numKeypoints; k++) {
+    let maxVal = -Infinity
+    let maxX = 0
+    let maxY = 0
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const val = heatmapArray[0][k][y][x]
+        if (val > maxVal) {
+          maxVal = val
+          maxX = x
+          maxY = y
+        }
+      }
+    }
+
+    keypoints.push({
+      x: maxX * scaleX,
+      y: maxY * scaleY,
+      confidence: maxVal
+    })
+  }
+
+  const bent = isBentPosture(keypoints)
+  if (bent) {
+    console.log('it bents')
   } else {
-    console.log('Output is not a single tensor:', output)
+    console.log('it did not bent')
   }
 }
