@@ -38,7 +38,7 @@ function createMainWindow(): void {
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/setup/main`)
+    mainWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/setup/main/index.html`)
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/main/index.html'))
   }
@@ -67,7 +67,7 @@ function createSetupWindow(): void {
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    setupWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/setup`)
+    setupWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/setup/index.html`)
   } else {
     setupWindow.loadFile(join(__dirname, '../renderer/setup/index.html'))
   }
@@ -87,12 +87,11 @@ app.whenReady().then(() => {
   })
   isStarted = os.uptime()
 
-  // if (store.get('initialized') == undefined) {
-  //   createSetupWindow()
-  // } else {
-  //   createMainWindow()
-  // }
-  createMainWindow()
+  if (store.get('initialized') == undefined) {
+    createSetupWindow()
+  } else {
+    createMainWindow()
+  }
   ipcMain.on('ping', () => read_images())
   ipcMain.on('two', () => mmo())
   ipcMain.on('three', () => three())
