@@ -7,8 +7,13 @@ import * as tflite from 'tfjs-tflite-node'
 import Store from 'electron-store'
 
 const store = new Store()
+import { GoogleGenAI } from '@google/genai'
+import os from 'os'
+
+let isStarted = 0
 
 function createMainWindow(): void {
+  // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -72,7 +77,6 @@ function createSetupWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
   // Default open or close DevTools by F12 in development
@@ -81,15 +85,16 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
-  // IPC test
-  ipcMain.on('ping', () => thing())
+  isStarted = os.uptime()
 
   if (store.get('initialized') == undefined) {
     createSetupWindow()
   } else {
     createMainWindow()
   }
+  ipcMain.on('ping', () => read_images())
+  ipcMain.on('two', () => mmo())
+  ipcMain.on('three', () => three())
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -102,11 +107,33 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-async function thing(): Promise<void> {
+async function three(): Promise<void> {
+  //console log how much time is passed since the app started
+  const uptime = os.uptime() - isStarted
+  console.log(`App has been running for ${uptime} seconds`)
+  //console log how much time is passed since the app started in hours, minutes and seconds
+  const hours = Math.floor(uptime / 3600)
+  const minutes = Math.floor((uptime % 3600) / 60)
+  const seconds = Math.floor(uptime % 60)
+  console.log(`App has been running for ${hours} hours, ${minutes} minutes and ${seconds} seconds`)
+}
+
+async function mmo(): Promise<void> {
+  const ai = new GoogleGenAI({ apiKey: 'AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g' })
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash-001',
+    contents:
+      "The user is currently studying on his laptop in bed for 135 minutes. He has a history of cervical disc herniation and turtle neck, and his goal is to reduce his neck pain. He is currently feeling tired, and his last posture feedback was ignored 3 out of 5 times, and the last feedback was not accepted. Today, he maintained good posture 38%, and this week's average is 41%. I wanna rest 10 minutes in every period. How long time is enough for him about one period? 10 minutes? or 1 hour?"
+  })
+  console.log(response.text)
+}
+
+async function read_images(): Promise<void> {
   // 1. .tflite 모델 로드
   const model = await tflite.loadTFLiteModel(join(__dirname, '../../models/model.tflite'))
 
-  // 2. 입력 텐서 생성 (예: 224x224 RGB 이미지)
+  // 2. ?��?�� ?��?�� ?��?�� (?��: 224x224 RGB ?��미�??)
   const input = tf.tensor(new Uint8Array(160 * 160 * 3), [1, 160, 160, 3])
 
   // 3. 추론
