@@ -109,14 +109,12 @@ app.whenReady().then(async () => {
 
   if (store.get('userData') == undefined) {
     consola.warn('User data not found, creating setup window')
-    ipcMain.on('get-permission-state', sendPermissionState)
-    ipcMain.on('ask-permission', askPermission)
     ipcMain.on('setup-complete', setupComplete)
     createSetupWindow()
   } else {
     consola.success('User data found, loading user data')
     userData = (await store.get('userData')) as userData
-    consola.info('User data loaded:', userData)
+    consola.debug('User data loaded:', userData)
     createMainWindow()
   }
 
