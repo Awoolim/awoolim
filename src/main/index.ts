@@ -9,7 +9,6 @@ import consola from 'consola'
 import sharp from 'sharp'
 import os from 'os'
 import icon from '../../resources/icon.png?asset'
-import { _ } from 'svelte-i18n'
 
 const store = new Store()
 
@@ -109,6 +108,8 @@ app.whenReady().then(async () => {
 
   if (store.get('userData') == undefined) {
     consola.warn('User data not found, creating setup window')
+    ipcMain.on('get-permission-state', sendPermissionState)
+    ipcMain.on('ask-permission', askPermission)
     ipcMain.on('setup-complete', setupComplete)
     createSetupWindow()
   } else {
@@ -135,6 +136,7 @@ app.on('window-all-closed', () => {
 })
 
 async function sendPermissionState(event: IpcMainEvent): Promise<void> {
+  consola.info('Checking camera permission state')
   // darwin, windows only method
   const camera = await systemPreferences.getMediaAccessStatus('camera')
   consola.info('Checking camera permission state:', camera)

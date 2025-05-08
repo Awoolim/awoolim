@@ -9,6 +9,8 @@
   let description = []
   let screen = -1
   let loadingCanvas
+  let splashContainer
+  let contentContainer
 
   waitLocale().then(() => {
     title = [$_('setup.permission.title'), $_('setup.welcome.title')]
@@ -22,7 +24,14 @@
 
   window.electron.ipcRenderer.on('permission-state', (event, state) => {
     if (state === 'granted') {
-      // screen = 1
+      loadingCanvas.style.opacity = 0
+      setTimeout(() => {
+        splashContainer.style.opacity = 0
+        setTimeout(() => {
+          splashContainer.style.display = 'none'
+          screen = 1
+        }, 1000)
+      }, 1000)
     } else {
       screen = 0
     }
@@ -33,32 +42,37 @@
       autoplay: true,
       loop: true,
       canvas: loadingCanvas,
-      src: loadingAnim
+      src: loadingAnim,
+      speed: 2
     })
   })
 </script>
 
-<div id="app">
+<div id="container">
   {#if screen >= 0}
     <div id="languageDisplay">
       <img src={globeIcon} alt="Language" />
       <span>{$_('language')}</span>
     </div>
-    <div id="information">
-      <h1>{title[screen]}</h1>
-      <span>{description[screen]}</span>
-    </div>
-    <div id="action">
-      {#if screen === 0}
-        <button id="next" on:click={grantPermission}>
-          {$_('setup.permission.button')}
-        </button>
-      {/if}
+    <div id="contentContainer" bind:this={contentContainer}>
+      <div id="information">
+        <h1>{title[screen]}</h1>
+        <span>{description[screen]}</span>
+      </div>
+      <div id="action">
+        {#if screen === 0}
+          <button id="next" on:click={grantPermission}>
+            {$_('setup.permission.button')}
+          </button>
+        {/if}
+      </div>
     </div>
   {:else}
-    <span id="logo">Awoolim</span>
-    <span id="phraze">Your tiny desk buddy</span>
-    <canvas bind:this={loadingCanvas} width="45" height="5"></canvas>
+    <div id="splashContainer" bind:this={splashContainer}>
+      <span id="logo">Awoolim</span>
+      <span id="phraze">Your tiny desk buddy</span>
+      <canvas bind:this={loadingCanvas} id="loadingAnim" width="90" height="10"></canvas>
+    </div>
   {/if}
 </div>
 
@@ -69,7 +83,7 @@
       --windows-background-to: #212226;
       --text-color: 255, 255, 255;
       --background-color: 0, 0, 0;
-      --svg-filter: invert(0);
+      --color-filter: invert(0);
     }
   }
 
@@ -79,11 +93,11 @@
       --windows-background-to: #c3c7d8;
       --text-color: 0, 0, 0;
       --background-color: 255, 255, 255;
-      --svg-filter: invert(1);
+      --color-filter: invert(1);
     }
   }
 
-  #app {
+  #container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -100,7 +114,17 @@
     font-size: 14px;
   }
 
+  #splashContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition-duration: 1s;
+  }
+
   #logo {
+    font-family: 'Playwrite DE SAS';
     font-size: 48px;
     color: rgb(var(--text-color));
   }
@@ -109,6 +133,33 @@
     font-size: 16px;
     color: rgba(var(--text-color), 0.5);
     margin-bottom: 3em;
+  }
+
+  #loadingAnim {
+    transition-duration: 0.5s;
+    width: 90px;
+    filter: var(--color-filter);
+  }
+
+  #contentContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation-name: fadeIn;
+    animation-duration: 1s;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.8) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 
   #languageDisplay {
@@ -130,7 +181,7 @@
     width: 20px;
     height: 20px;
     margin-right: 5px;
-    filter: var(--svg-filter);
+    filter: var(--color-filter);
   }
 
   #information > h1 {
