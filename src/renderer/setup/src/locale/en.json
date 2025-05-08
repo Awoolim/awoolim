@@ -1,5 +1,10 @@
 {
   "setup": {
+    "permission": {
+      "title": "Please allow camera access",
+      "description": "Camera access is required to use the real-time posture correction feature.\nAll data collected by the camera is processed only on my device.",
+      "button": "Allow"
+    },
     "welcome": {
       "title": "Welcome"
     }
