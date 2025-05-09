@@ -29,14 +29,21 @@ function createMainWindow(): void {
   let mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
+    transparent: true,
+    frame: false,
+    resizable: false,
+    focusable: false,
+    skipTaskbar: true,
+    hasShadow: false,
     show: false,
-    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false
     }
   })
+
+  mainWindow.setIgnoreMouseEvents(true)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -54,10 +61,14 @@ function createMainWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/main/index.html'))
   }
+
+  ipcMain.on('webcam-frame', async (_event, base64: string) => {
+    const imageBuffer = Buffer.from(base64.split(',')[1], 'base64')
+    await read_images(imageBuffer)
+  })
+
   check_setup()
-  
   get_data_and_communicate_with_gemini()
-  
 }
 
 function createSetupWindow(): void {
@@ -87,6 +98,10 @@ function createSetupWindow(): void {
   } else {
     setupWindow.loadFile(join(__dirname, '../renderer/setup/index.html'))
   }
+
+  ipcMain.on('get-permission-state', sendPermissionState)
+  ipcMain.on('ask-permission', askPermission)
+  ipcMain.on('setup-complete', setupComplete)
 }
 
 app.whenReady().then(async () => {
@@ -105,20 +120,17 @@ app.whenReady().then(async () => {
   })
   isStarted = os.uptime()
 
-  // if (store.get('userData') == undefined) {
-  //   consola.warn('User data not found, creating setup window')
-    ipcMain.on('get-permission-state', sendPermissionState)
-    ipcMain.on('ask-permission', askPermission)
-    ipcMain.on('setup-complete', setupComplete)
+  if (store.get('userData') == undefined) {
+    consola.warn('User data not found, creating setup window')
     createSetupWindow()
-  // } else {
-  //   consola.success('User data found, loading user data')
-  //   userData = (await store.get('userData')) as userData
-  //   consola.debug('User data loaded:', userData)
-    // createMainWindow()
-  // }
+  } else {
+    consola.success('User data found, loading user data')
+    userData = (await store.get('userData')) as userData
+    consola.debug('User data loaded:', userData)
+    createMainWindow()
+  }
 
-  // tflite 모델 로드 여부 
+  // tflite 모델 로드 여부
   // ipcMain.on('three', () => three())
 
   app.on('activate', function () {
@@ -140,6 +152,7 @@ async function sendPermissionState(event: IpcMainEvent): Promise<void> {
   consola.info('Checking camera permission state:', camera)
   event.sender.send('permission-state', camera)
 }
+
 async function askPermission(event: IpcMainEvent): Promise<void> {
   // darwin only method
   if (process.platform == 'darwin') {
@@ -173,6 +186,7 @@ function setupComplete(_event: IpcMainEvent, data: userData): void {
 
   createMainWindow()
 }
+
 async function check_tflite(): Promise<boolean> {
   try {
     // 1. .tflite 모델 로드
@@ -182,8 +196,7 @@ async function check_tflite(): Promise<boolean> {
     // 3. 추론
     model.predict(input)
     return true
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error loading tflite model:', error)
     return false
   }
@@ -191,42 +204,49 @@ async function check_tflite(): Promise<boolean> {
 
 async function check_setup(): Promise<void> {
   if (await check_tflite()) {
-    console.log("tflite model loaded");
+    console.log('tflite model loaded')
   } else {
-    console.log("Failed to load tflite model");
-    error("Failed to load tflite model");
+    console.log('Failed to load tflite model')
+    error('Failed to load tflite model')
   }
 }
 
 async function get_data_and_communicate_with_gemini(): Promise<void> {
-  let send_script = "{print form :  2 integer between 5~100 }\
-  this person is "+userData.age+"old, gender is "+userData.gender+"\
-  this person has these diseases : "+userData.conditions.join(', ')+"\
-  this person is developer, and this person work. Tell me how much time we have to work and rest."
+  let send_script =
+    '{print form :  2 integer between 5~100 }\
+  this person is ' +
+    userData.age +
+    'old, gender is ' +
+    userData.gender +
+    '\
+  this person has these diseases : ' +
+    userData.conditions.join(', ') +
+    '\
+  this person is developer, and this person work. Tell me how much time we have to work and rest.'
   let send_gemini = await get_send_gemini(send_script)
-  console.log("send_gemini : ", send_gemini)
+  console.log('send_gemini : ', send_gemini)
 }
 
-async function get_send_gemini(gemini_thing : string): Promise<String> {
+async function get_send_gemini(gemini_thing: string): Promise<String> {
   let ai = new GoogleGenAI({ apiKey: 'AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g' })
 
   let response = await ai.models.generateContent({
     model: 'gemini-2.0-flash-001',
-    contents:
-      gemini_thing
+    contents: gemini_thing
   })
   return response.text || ''
 }
 
-async function read_images(): Promise<void> {
-  let imagePath = join(__dirname, '../../resources/5.jpg')
+async function read_images(imageBuffer: Buffer): Promise<void> {
+  consola.success('Image buffer received, processing image...')
+
   let targetWidth = 257
   let targetHeight = 353
-  let metadata = await sharp(imagePath).metadata()
+  let metadata = await sharp(imageBuffer).metadata()
 
   let centerX = Math.floor((metadata.width! - targetWidth) / 2)
   let centerY = Math.floor((metadata.height! - targetHeight) / 2)
-  let resizedImageBuffer = await sharp(imagePath)
+  let resizedImageBuffer = await sharp(imageBuffer)
     .extract({ left: centerX, top: centerY, width: targetWidth, height: targetHeight })
     .removeAlpha()
     .raw()

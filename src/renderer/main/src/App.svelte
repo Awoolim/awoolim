@@ -1,32 +1,54 @@
-<script lang="ts">
-  import Versions from './components/Versions.svelte'
-  import electronLogo from './assets/electron.svg'
+<script>
+  import { onMount } from 'svelte'
 
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-  const onTest = (): void => window.electron.ipcRenderer.send('two')
-  const real_Test = (): void => window.electron.ipcRenderer.send('three')
+  let videoElement
+
+  let stream = null
+
+  // 웹캠 시작
+  async function startCamera() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      videoElement.srcObject = stream
+      await videoElement.play()
+    } catch (err) {
+      console.error('웹캠 접근 실패:', err)
+    }
+  }
+
+  // 프레임 캡처
+  function captureFrame() {
+    const canvas = document.createElement('canvas')
+    canvas.width = videoElement.videoWidth
+    canvas.height = videoElement.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height)
+    return canvas.toDataURL('image/png')
+  }
+
+  // 주기적 전송
+  function startCaptureLoop() {
+    const base64 = captureFrame()
+    window.electron.ipcRenderer.send('webcam-frame', base64)
+    setTimeout(startCaptureLoop, 1000)
+  }
+
+  // mount 시 실행
+  onMount(() => {
+    startCamera().then(() => {
+      startCaptureLoop()
+    })
+  })
 </script>
 
-<img alt="logo" class="logo" src={electronLogo} />
-<div class="creator">Powered by electron-vite</div>
-<div class="text">
-  Build an Electron app with
-  <span class="svelte">Svelte</span>
-  and
-  <span class="ts">TypeScript</span>
-</div>
-<p class="tip">Please <code>F12</code> to open the devTool</p>
-<div class="actions">
-  <div id="test" class="action2">
-    <a target="_blank" rel="noreferrer2" on:click={onTest}>Send IPC</a>
-  </div>
-  
-  <div class="action">
-    <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions a11y-missing-attribute-->
-    <a target="_blank" rel="noreferrer" on:click={ipcHandle}>Send IPC2</a>
-  </div>
-  <div id="test3" class="action3">
-    <a target="_blank" rel="noreferrer3" on:click={real_Test}>Send IPC</a>
-  </div>
-</div>
-<Versions />
+<video bind:this={videoElement} autoplay playsinline muted></video>
+
+<style>
+  video {
+    width: 100%;
+    max-width: 640px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    /* opacity: 0; */
+  }
+</style>
