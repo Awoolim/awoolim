@@ -247,7 +247,7 @@ async function get_send_gemini(gemini_thing: string): Promise<String> {
     },
   };
   let response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash-001',
+    model: 'gemini-2.5-pro-exp-03-25',
     config: config,
     contents:
       gemini_thing
@@ -276,8 +276,6 @@ async function read_images(imageBuffer: Buffer): Promise<void> {
   // 1. .tflite 모델 로드
   let model = await tflite.loadTFLiteModel(join(__dirname, '../../resources/model/1.tflite'))
 
-  // 2. ?��?�� ?��?�� ?��?�� (?��: 224x224 RGB ?��미�??)
-  console.log('input shape:', input.shape)
   // 3. 추론
   let output = model.predict(input)
   let heatmapTensor = output.float_heatmaps
