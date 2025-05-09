@@ -29,14 +29,21 @@ async function createMainWindow(): Promise<void> {
   let mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
+    transparent: true,
+    frame: false,
+    resizable: false,
+    focusable: false,
+    skipTaskbar: true,
+    hasShadow: false,
     show: false,
-    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false
     }
   })
+
+  mainWindow.setIgnoreMouseEvents(true)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -54,10 +61,19 @@ async function createMainWindow(): Promise<void> {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/main/index.html'))
   }
+
   check_setup()
   
   let time_do = await get_data_and_communicate_with_gemini()
   console.log("time_analyze : ", time_do);
+
+
+  ipcMain.on('webcam-frame', async (_event, base64: string) => {
+    const imageBuffer = Buffer.from(base64.split(',')[1], 'base64')
+    await read_images(imageBuffer)
+  })
+
+ 
   
 }
 
@@ -88,6 +104,10 @@ function createSetupWindow(): void {
   } else {
     setupWindow.loadFile(join(__dirname, '../renderer/setup/index.html'))
   }
+
+  ipcMain.on('get-permission-state', sendPermissionState)
+  ipcMain.on('ask-permission', askPermission)
+  ipcMain.on('setup-complete', setupComplete)
 }
 
 app.whenReady().then(async () => {
@@ -108,18 +128,15 @@ app.whenReady().then(async () => {
 
   // if (store.get('userData') == undefined) {
   //   consola.warn('User data not found, creating setup window')
-    ipcMain.on('get-permission-state', sendPermissionState)
-    ipcMain.on('ask-permission', askPermission)
-    ipcMain.on('setup-complete', setupComplete)
     createSetupWindow()
   // } else {
   //   consola.success('User data found, loading user data')
   //   userData = (await store.get('userData')) as userData
   //   consola.debug('User data loaded:', userData)
-    // createMainWindow()
+  //   createMainWindow()
   // }
 
-  // tflite 모델 로드 여부 
+  // tflite 모델 로드 여부
   // ipcMain.on('three', () => three())
 
   app.on('activate', function () {
@@ -141,6 +158,7 @@ async function sendPermissionState(event: IpcMainEvent): Promise<void> {
   consola.info('Checking camera permission state:', camera)
   event.sender.send('permission-state', camera)
 }
+
 async function askPermission(event: IpcMainEvent): Promise<void> {
   // darwin only method
   if (process.platform == 'darwin') {
@@ -174,6 +192,7 @@ function setupComplete(_event: IpcMainEvent, data: userData): void {
 
   createMainWindow()
 }
+
 async function check_tflite(): Promise<boolean> {
   try {
     // 1. .tflite 모델 로드
@@ -183,8 +202,7 @@ async function check_tflite(): Promise<boolean> {
     // 3. 추론
     model.predict(input)
     return true
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error loading tflite model:', error)
     return false
   }
@@ -192,10 +210,10 @@ async function check_tflite(): Promise<boolean> {
 
 async function check_setup(): Promise<void> {
   if (await check_tflite()) {
-    console.log("tflite model loaded");
+    console.log('tflite model loaded')
   } else {
-    console.log("Failed to load tflite model");
-    error("Failed to load tflite model");
+    console.log('Failed to load tflite model')
+    error('Failed to load tflite model')
   }
 }
 
@@ -215,7 +233,7 @@ async function get_data_and_communicate_with_gemini(): Promise<number> {
   return parseInt(result["result"])
 }
 
-async function get_send_gemini(gemini_thing : string): Promise<String> {
+async function get_send_gemini(gemini_thing: string): Promise<String> {
   let ai = new GoogleGenAI({ apiKey: 'AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g' })
   const config = {
     responseMimeType: 'application/json',
@@ -237,15 +255,16 @@ async function get_send_gemini(gemini_thing : string): Promise<String> {
   return response.text || ''
 }
 
-async function read_images(): Promise<void> {
-  let imagePath = join(__dirname, '../../resources/5.jpg')
+async function read_images(imageBuffer: Buffer): Promise<void> {
+  consola.success('Image buffer received, processing image...')
+
   let targetWidth = 257
   let targetHeight = 353
-  let metadata = await sharp(imagePath).metadata()
+  let metadata = await sharp(imageBuffer).metadata()
 
   let centerX = Math.floor((metadata.width! - targetWidth) / 2)
   let centerY = Math.floor((metadata.height! - targetHeight) / 2)
-  let resizedImageBuffer = await sharp(imagePath)
+  let resizedImageBuffer = await sharp(imageBuffer)
     .extract({ left: centerX, top: centerY, width: targetWidth, height: targetHeight })
     .removeAlpha()
     .raw()
