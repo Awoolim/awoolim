@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, IpcMainEvent, systemPreferences } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { GoogleGenAI } from '@google/genai'
+import { GoogleGenAI,Type } from '@google/genai'
 import * as tf from '@tensorflow/tfjs'
 import * as tflite from 'tfjs-tflite-node'
 import Store from 'electron-store'
@@ -9,7 +9,7 @@ import consola from 'consola'
 import sharp from 'sharp'
 import os from 'os'
 import icon from '../../resources/icon.png?asset'
-import { error } from 'console'
+import { error, time } from 'console'
 
 let store = new Store()
 
@@ -24,7 +24,7 @@ let userData: userData = {
   otherConditionDetail: ''
 }
 
-function createMainWindow(): void {
+async function createMainWindow(): Promise<void> {
   // Create the browser window.
   let mainWindow = new BrowserWindow({
     width: 900,
@@ -56,7 +56,8 @@ function createMainWindow(): void {
   }
   check_setup()
   
-  get_data_and_communicate_with_gemini()
+  let time_do = await get_data_and_communicate_with_gemini()
+  console.log("time_analyze : ", time_do);
   
 }
 
@@ -198,20 +199,38 @@ async function check_setup(): Promise<void> {
   }
 }
 
-async function get_data_and_communicate_with_gemini(): Promise<void> {
-  let send_script = "{print form :  2 integer between 5~100 }\
-  this person is "+userData.age+"old, gender is "+userData.gender+"\
+async function get_data_and_communicate_with_gemini(): Promise<number> {
+  let send_script = "\
+  this person is "+userData.age+" years old, gender is "+userData.gender+"\
   this person has these diseases : "+userData.conditions.join(', ')+"\
-  this person is developer, and this person work. Tell me how much time we have to work and rest."
+  this person is developer, and this person work. \
+  Tell me how much time we have to work per resting 10 minutes"
   let send_gemini = await get_send_gemini(send_script)
-  console.log("send_gemini : ", send_gemini)
+  if (send_gemini == undefined) {
+    consola.error("Gemini response is undefined")
+    return "Gemini response is undefined"
+  }
+  let result =  JSON.parse(send_gemini)
+  
+  return parseInt(result["result"])
 }
 
 async function get_send_gemini(gemini_thing : string): Promise<String> {
   let ai = new GoogleGenAI({ apiKey: 'AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g' })
-
+  const config = {
+    responseMimeType: 'application/json',
+    responseSchema: {
+      type: Type.OBJECT,
+      properties: {
+        result: {
+          type: Type.NUMBER,
+        },
+      },
+    },
+  };
   let response = await ai.models.generateContent({
     model: 'gemini-2.0-flash-001',
+    config: config,
     contents:
       gemini_thing
   })
