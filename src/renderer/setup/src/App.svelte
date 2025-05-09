@@ -61,6 +61,7 @@
   }
 
   const setupComplete = () => {
+    userData.language = $_('language_code')
     window.electron.ipcRenderer.send('setup-complete', userData)
   }
 

@@ -1,5 +1,6 @@
 {
   "language": "한국어",
+  "language_code": "ko",
   "default": {
     "allow": "허용",
     "next": "다음",

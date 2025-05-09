@@ -8,5 +8,5 @@ interface userData {
   age: number
   gender: Gender
   conditions: HealthCondition[]
-  otherConditionDetail?: string
+  otherConditionDetail: string
 }

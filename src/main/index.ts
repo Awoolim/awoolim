@@ -19,7 +19,8 @@ let userData: userData = {
   name: '',
   age: 0,
   gender: 'unspecified',
-  conditions: []
+  conditions: [],
+  otherConditionDetail: ''
 }
 
 function createMainWindow(): void {
@@ -199,20 +200,19 @@ async function mmo(): Promise<void> {
   console.log(response.text)
 }
 
-
 async function read_images(): Promise<void> {
   let imagePath = join(__dirname, '../../resources/5.jpg')
   let targetWidth = 257
   let targetHeight = 353
-  let metadata = await sharp(imagePath).metadata();
+  let metadata = await sharp(imagePath).metadata()
 
-  let centerX = Math.floor((metadata.width! - targetWidth) / 2);
-  let centerY = Math.floor((metadata.height! - targetHeight) / 2);
+  let centerX = Math.floor((metadata.width! - targetWidth) / 2)
+  let centerY = Math.floor((metadata.height! - targetHeight) / 2)
   let resizedImageBuffer = await sharp(imagePath)
-  .extract({ left: centerX, top: centerY, width: targetWidth, height: targetHeight })
-  .removeAlpha()
-  .raw()
-  .toBuffer();
+    .extract({ left: centerX, top: centerY, width: targetWidth, height: targetHeight })
+    .removeAlpha()
+    .raw()
+    .toBuffer()
 
   // 2. Tensor�? �??�� (shape: [1, 353, 257, 3])
   let input = tf.tensor(new Uint8Array(resizedImageBuffer), [1, 353, 257, 3])
@@ -236,7 +236,7 @@ async function read_images(): Promise<void> {
   let scaleX = inputWidth / w
 
   let keypoints: { x: number; y: number; confidence: number }[] = []
-  
+
   for (let k = 0; k < numKeypoints; k++) {
     let maxVal = -Infinity
     let maxX = 0
@@ -259,25 +259,24 @@ async function read_images(): Promise<void> {
       confidence: maxVal
     })
   }
-  
-  let nose = keypoints[0];
-  let leftShoulder = keypoints[5];
-  let rightShoulder = keypoints[6];
-  let leftHip = keypoints[11];
-  let rightHip = keypoints[12];
-  
-  let 목기울어짐 = Math.abs((leftShoulder.x - nose.x) - (rightShoulder.x - nose.x)) > 30;
-  let 어깨비대칭 = Math.abs(leftShoulder.y - rightShoulder.y) > 20;
-  let 어깨굽음 = (leftShoulder.y - nose.y) > 30 && (rightShoulder.y - nose.y) > 30;
-  let 상체기울어짐 = Math.abs(leftHip.x - rightHip.x) > 40;
-  
-  let result = {
-    "0": 목기울어짐,
-    "1": 어깨비대칭,
-    "2": 어깨굽음,
-    "3": 상체기울어짐
-  };
-  
-  console.log(JSON.stringify(result));
-}
 
+  let nose = keypoints[0]
+  let leftShoulder = keypoints[5]
+  let rightShoulder = keypoints[6]
+  let leftHip = keypoints[11]
+  let rightHip = keypoints[12]
+
+  let 목기울어짐 = Math.abs(leftShoulder.x - nose.x - (rightShoulder.x - nose.x)) > 30
+  let 어깨비대칭 = Math.abs(leftShoulder.y - rightShoulder.y) > 20
+  let 어깨굽음 = leftShoulder.y - nose.y > 30 && rightShoulder.y - nose.y > 30
+  let 상체기울어짐 = Math.abs(leftHip.x - rightHip.x) > 40
+
+  let result = {
+    '0': 목기울어짐,
+    '1': 어깨비대칭,
+    '2': 어깨굽음,
+    '3': 상체기울어짐
+  }
+
+  console.log(JSON.stringify(result))
+}
