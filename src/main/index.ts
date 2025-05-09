@@ -227,7 +227,7 @@ async function get_data_and_communicate_with_gemini(): Promise<number> {
   this person has these diseases : "+userData.conditions.join(', ')+"\
   this person is developer, and this person work. \
   Tell me how much time we have to work per resting 10 minutes"
-  let send_gemini = await get_send_gemini(send_script)
+  let send_gemini = await get_send_gemini(send_script,0)
   if (send_gemini == undefined) {
     consola.error("Gemini response is undefined")
     return 0
@@ -237,19 +237,22 @@ async function get_data_and_communicate_with_gemini(): Promise<number> {
   return parseInt(result["result"])
 }
 
-async function get_send_gemini(gemini_thing: string): Promise<string> {
+async function get_send_gemini(gemini_thing: string,option: number): Promise<string> {
   let ai = new GoogleGenAI({ apiKey: 'AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g' })
-  const config = {
-    responseMimeType: 'application/json',
-    responseSchema: {
-      type: Type.OBJECT,
-      properties: {
-        result: {
-          type: Type.NUMBER,
+  let config = {};
+  if(option == 0){
+    config = {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          result: {
+            type: Type.NUMBER,
+          },
         },
       },
-    },
-  };
+    };
+  }
   let response = await ai.models.generateContent({
     model: 'gemini-2.5-pro-exp-03-25',
     config: config,
@@ -383,8 +386,20 @@ const result = {
   "7": 좌우기울어짐,
   "8": 화면가까움
 };
-
-console.log(JSON.stringify(result));
+console.log(result);
+// console.log(get_send_gemini('give one sentence advice with this json skeleton file. this array result means\
+//   const result = {\
+//   "0": "Neck Tilt"\
+//   "1": "Shoulder Asymmetry"\
+//   "2": "Rounded Shoulders"\
+//   "3": "Upper Body Tilt"\
+//   "4": "Head Drop"\
+//   "5": "Shoulder Roll"\
+//   "6": "Body Twist"\
+//   "7": "Lateral Tilt"\
+//   "8": "Too Close to Screen"\
+// }; '
+// +JSON.stringify(result),1));
 
 
 }
