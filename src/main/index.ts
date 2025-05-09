@@ -12,7 +12,9 @@ import icon from '../../resources/icon.png?asset'
 import { error } from 'console'
 
 let store = new Store()
-
+let now = new Date().getTime()
+let new_date = new Date().getTime()
+console.log(now)   
 
 let isStarted: number = 0
 
@@ -65,13 +67,13 @@ async function createMainWindow(): Promise<void> {
 
   check_setup()
   
-  // let time_do = await get_data_and_communicate_with_gemini()
-  // console.log("time_analyze : ", time_do);
+  let time_did = await get_data_and_communicate_with_gemini()
+  console.log("time_analyze : ", time_did);
 
-
+  
   ipcMain.on('webcam-frame', async (_event, base64: string) => {
     const imageBuffer = Buffer.from(base64.split(',')[1], 'base64')
-    await check_isPerson(imageBuffer)
+    await check_time(imageBuffer,time_did)
     await read_images(imageBuffer)
   })
 
@@ -370,4 +372,16 @@ async function check_isPerson(imageBuffer: Buffer): Promise<Boolean> {
   return hasPerson
 
 }
-  
+async function check_time(imageBuffer: Buffer , time_can_do : number): Promise<void> {
+  let isPerson = await check_isPerson(imageBuffer)
+  if (isPerson) {
+    new_date = new Date().getTime()
+    let time_did = new_date - now
+    if (time_did/1000 > 60 * time_can_do) {
+      console.log("time_did : ", time_did);
+    }
+  }else{
+    now = new Date().getTime()
+    console.log("no person, so reset");
+  }
+}
