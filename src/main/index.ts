@@ -230,14 +230,14 @@ async function get_data_and_communicate_with_gemini(): Promise<number> {
   let send_gemini = await get_send_gemini(send_script)
   if (send_gemini == undefined) {
     consola.error("Gemini response is undefined")
-    return "Gemini response is undefined"
+    return 0
   }
   let result =  JSON.parse(send_gemini)
   
   return parseInt(result["result"])
 }
 
-async function get_send_gemini(gemini_thing: string): Promise<String> {
+async function get_send_gemini(gemini_thing: string): Promise<string> {
   let ai = new GoogleGenAI({ apiKey: 'AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g' })
   const config = {
     responseMimeType: 'application/json',
@@ -352,7 +352,6 @@ async function check_isPerson(imageBuffer: Buffer): Promise<Boolean> {
   let input = tf.tensor(new Uint8Array(resizedImageBuffer), [1, 300, 300, 3], 'int32')
   // 3. 추론
   let response = model.predict(input)
-  const boxes = response['TFLite_Detection_PostProcess']
   const classIds = response['TFLite_Detection_PostProcess:1']
   const scores = response['TFLite_Detection_PostProcess:2']
 
