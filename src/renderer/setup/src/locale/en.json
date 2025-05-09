@@ -1,13 +1,40 @@
 {
   "language": "English",
+  "default": {
+    "allow": "Allow",
+    "next": "Next",
+    "complete": "Complete"
+  },
   "setup": {
     "permission": {
       "title": "Please allow camera access",
-      "description": "Camera access is required to use the real-time posture correction feature.\nAll data collected by the camera is processed only on my device.",
-      "button": "Allow"
+      "description": "Camera access is required to use the real-time posture correction feature.\nAll data collected by the camera is processed only on my device."
     },
     "welcome": {
       "title": "Welcome"
+    },
+    "username": {
+      "title": "What should we call you?",
+      "placeholder": "Nickname"
+    },
+    "details": {
+      "title": "To better understand you, we have a few questions.",
+      "description": "This information will be used to personalize your posture correction experience.\nDon't worry, this information is securely stored and not shared with others.",
+      "age": "Age",
+      "gender": "Gender",
+      "gender_male": "male",
+      "gender_female": "female",
+      "gender_unspecified": "unspecified",
+      "conditions": "Physical conditions (multiple)",
+      "neck_disc": "Neck disc",
+      "forward_head": "Forward head",
+      "back_pain": "Back pain",
+      "shoulder_pain": "Shoulder pain",
+      "other": "Other"
+    },
+    "complete": {
+      "title": "Setup complete",
+      "description": "You are now ready to start posture correction.\nClick the button below to begin."
     }
   }
 }

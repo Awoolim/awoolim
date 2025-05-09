@@ -19,8 +19,7 @@ let userData: userData = {
   name: '',
   age: 0,
   gender: 'unspecified',
-  conditions: [],
-  goals: []
+  conditions: []
 }
 
 function createMainWindow(): void {
@@ -168,6 +167,11 @@ function setupComplete(_event: IpcMainEvent, data: userData): void {
   ipcMain.off('get-permission-state', sendPermissionState)
   ipcMain.off('ask-permission', askPermission)
   ipcMain.off('setup-complete', setupComplete)
+
+  const setupWindow = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Setup')
+  if (setupWindow) {
+    setupWindow.close()
+  }
 
   createMainWindow()
 }

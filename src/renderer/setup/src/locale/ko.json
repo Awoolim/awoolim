@@ -1,13 +1,40 @@
 {
   "language": "한국어",
+  "default": {
+    "allow": "허용",
+    "next": "다음",
+    "complete": "완료"
+  },
   "setup": {
     "permission": {
       "title": "카메라 접근을 허용해주세요",
-      "description": "실시간 자세교정 기능을 사용하기 위해 카메라 접근 권한이 필요해요.\n카메라로 수집된 화면은 모두 내 기기 안에서만 처리돼요.",
-      "button": "허용하기"
+      "description": "실시간 자세교정 기능을 사용하기 위해 카메라 접근 권한이 필요해요.\n카메라로 수집된 화면은 모두 내 기기 안에서만 처리돼요."
     },
     "welcome": {
       "title": "환영합니다"
+    },
+    "username": {
+      "title": "당신을 어떻게 부를까요?",
+      "placeholder": "닉네임"
+    },
+    "details": {
+      "title": "당신을 더 잘 알기 위해 몇 가지 질문을 할게요.",
+      "description": "이 정보는 당신의 자세 교정 경험을 개인화하는 데 사용될 거예요.\n걱정하지 마세요, 이 정보는 안전하게 저장되고 다른 사람과 공유되지 않아요.",
+      "age": "나이",
+      "gender": "성별",
+      "gender_male": "남",
+      "gender_female": "여",
+      "gender_unspecified": "선택 안 함",
+      "conditions": "신체 특이사항 (복수 선택)",
+      "neck_disc": "목 디스크",
+      "forward_head": "거북목",
+      "back_pain": "허리 통증",
+      "shoulder_pain": "어깨 통증",
+      "other": "기타"
+    },
+    "complete": {
+      "title": "설정 완료",
+      "description": "이제 자세 교정을 시작할 준비가 되었어요.\n자세 교정을 시작하려면 아래 버튼을 클릭하세요."
     }
   }
 }
