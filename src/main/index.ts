@@ -317,26 +317,76 @@ async function read_images(imageBuffer: Buffer): Promise<void> {
       confidence: maxVal
     })
   }
+  
+  
 
-  let nose = keypoints[0]
-  let leftShoulder = keypoints[5]
-  let rightShoulder = keypoints[6]
-  let leftHip = keypoints[11]
-  let rightHip = keypoints[12]
+const getAvg = (...values) => values.reduce((a, b) => a + b) / values.length;
 
-  let 목기울어짐 = Math.abs(leftShoulder.x - nose.x - (rightShoulder.x - nose.x)) > 30
-  let 어깨비대칭 = Math.abs(leftShoulder.y - rightShoulder.y) > 20
-  let 어깨굽음 = leftShoulder.y - nose.y > 30 && rightShoulder.y - nose.y > 30
-  let 상체기울어짐 = Math.abs(leftHip.x - rightHip.x) > 40
+// 좌표 할당
+const nose = keypoints[0];
+const leftEye = keypoints[1];
+const rightEye = keypoints[2];
+const leftEar = keypoints[3];
+const rightEar = keypoints[4];
+const leftShoulder = keypoints[5];
+const rightShoulder = keypoints[6];
+const leftElbow = keypoints[7];
+const rightElbow = keypoints[8];
+const leftWrist = keypoints[9];
+const rightWrist = keypoints[10];
+const leftHip = keypoints[11];
+const rightHip = keypoints[12];
 
-  let result = {
-    '0': 목기울어짐,
-    '1': 어깨비대칭,
-    '2': 어깨굽음,
-    '3': 상체기울어짐
-  }
+// 0: 목 기울어짐 (코가 어깨 중심선에서 벗어남)
+const shoulderCenterX = getAvg(leftShoulder.x, rightShoulder.x);
+const 목기울어짐 = Math.abs(nose.x - shoulderCenterX) > 30;
 
-  console.log(JSON.stringify(result))
+// 1: 어깨 비대칭 (좌우 어깨 높이 차이)
+const 어깨비대칭 = Math.abs(leftShoulder.y - rightShoulder.y) > 20;
+
+// 2: 어깨 굽음 (어깨가 코보다 아래에 위치)
+const avgShoulderY = getAvg(leftShoulder.y, rightShoulder.y);
+const 어깨굽음 = avgShoulderY - nose.y > 30;
+
+// 3: 상체 기울어짐 (좌우 엉덩이 x좌표 차이)
+const 상체기울어짐 = Math.abs(leftHip.x - rightHip.x) > 40;
+
+// 4: 고개 숙임 (코가 어깨보다 지나치게 아래)
+const 고개숙임 = nose.y - avgShoulderY < 10;
+
+// 5: 어깨 말림 (팔이 안쪽으로 접혀 있음 → 어깨-팔꿈치-손목 라인 좁아짐)
+const leftFolded = leftWrist.x > leftElbow.x && leftElbow.x > leftShoulder.x;
+const rightFolded = rightWrist.x < rightElbow.x && rightElbow.x < rightShoulder.x;
+const 어깨말림 = leftFolded && rightFolded;
+
+// 6: 몸 비틀림 (어깨-엉덩이 간 좌우 x 거리 차이)
+const leftOffset = leftShoulder.x - leftHip.x;
+const rightOffset = rightShoulder.x - rightHip.x;
+const 몸비틀림 = Math.abs(leftOffset - rightOffset) > 40;
+
+// 7: 좌우 기울어짐 (코가 치우쳐 있고 어깨 높이도 차이남)
+const 좌우기울어짐 = 목기울어짐 && 어깨비대칭;
+
+// 8: 화면 거리 과도함 (코 + 눈 높이가 지나치게 높으면 얼굴이 너무 가까이 있음)
+const avgFaceY = getAvg(nose.y, leftEye.y, rightEye.y);
+const 화면가까움 = avgFaceY < 100;
+
+// 결과 정리
+const result = {
+  "0": 목기울어짐,
+  "1": 어깨비대칭,
+  "2": 어깨굽음,
+  "3": 상체기울어짐,
+  "4": 고개숙임,
+  "5": 어깨말림,
+  "6": 몸비틀림,
+  "7": 좌우기울어짐,
+  "8": 화면가까움
+};
+
+console.log(JSON.stringify(result));
+
+
 }
 
 async function check_isPerson(imageBuffer: Buffer): Promise<Boolean> {
@@ -371,6 +421,7 @@ async function check_isPerson(imageBuffer: Buffer): Promise<Boolean> {
   return hasPerson
 
 }
+
 async function check_time(imageBuffer: Buffer , time_can_do : number): Promise<void> {
   let isPerson = await check_isPerson(imageBuffer)
   if (isPerson) {
