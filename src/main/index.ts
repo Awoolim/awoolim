@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, IpcMainEvent, systemPreferences } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { GoogleGenAI } from '@google/genai'
@@ -19,8 +19,7 @@ let userData: userData = {
   name: '',
   age: 0,
   gender: 'unspecified',
-  conditions: [],
-  goals: []
+  conditions: []
 }
 
 function createMainWindow(): void {
@@ -106,18 +105,18 @@ app.whenReady().then(async () => {
   })
   isStarted = os.uptime()
 
-  // if (store.get('userData') == undefined) {
-  //   consola.warn('User data not found, creating setup window')
-  //   ipcMain.on('setup-complete', setupComplete)
-  //   createSetupWindow()
-  // } else {
-  //   consola.success('User data found, loading user data')
-  //   userData = (await store.get('userData')) as userData
-  //   consola.debug('User data loaded:', userData)
-  //   createMainWindow()
-  // }
-
-  createMainWindow()
+  if (store.get('userData') == undefined) {
+    consola.warn('User data not found, creating setup window')
+    ipcMain.on('get-permission-state', sendPermissionState)
+    ipcMain.on('ask-permission', askPermission)
+    ipcMain.on('setup-complete', setupComplete)
+    createSetupWindow()
+  } else {
+    consola.success('User data found, loading user data')
+    userData = (await store.get('userData')) as userData
+    consola.debug('User data loaded:', userData)
+    createMainWindow()
+  }
 
   read_images()
   ipcMain.on('ping', () => read_images())
@@ -132,16 +131,48 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  consola.info('All windows closed, quitting app')
+  consola.warn('All windows closed, quitting app')
   app.quit()
 })
+
+async function sendPermissionState(event: IpcMainEvent): Promise<void> {
+  consola.info('Checking camera permission state')
+  // darwin, windows only method
+  const camera = await systemPreferences.getMediaAccessStatus('camera')
+  consola.info('Checking camera permission state:', camera)
+  event.sender.send('permission-state', camera)
+}
+
+async function askPermission(event: IpcMainEvent): Promise<void> {
+  // darwin only method
+  if (process.platform == 'darwin') {
+    const camera = await systemPreferences.askForMediaAccess('camera')
+    if (camera) {
+      consola.success('Camera permission granted')
+      event.sender.send('permission-state', 'granted')
+    } else {
+      consola.error('Camera permission denied')
+      event.sender.send('permission-state', 'denied')
+    }
+  } else {
+    // todo : ask for permission on other platforms
+    consola.error('Camera permission is not supported on this platform')
+  }
+}
 
 function setupComplete(_event: IpcMainEvent, data: userData): void {
   userData = data
   store.set('userData', userData)
   consola.success('User data saved')
-  consola.debug('User data from store:', store.get('userData'))
+  consola.info('User data from store:', store.get('userData'))
+  ipcMain.off('get-permission-state', sendPermissionState)
+  ipcMain.off('ask-permission', askPermission)
   ipcMain.off('setup-complete', setupComplete)
+
+  const setupWindow = BrowserWindow.getAllWindows().find((window) => window.getTitle() === 'Setup')
+  if (setupWindow) {
+    setupWindow.close()
+  }
 
   createMainWindow()
 }

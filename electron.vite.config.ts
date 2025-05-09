@@ -21,6 +21,7 @@ export default defineConfig({
   },
   renderer: {
     plugins: [svelte()],
+    assetsInclude: ['**/*.lottie'],
     build: {
       rollupOptions: {
         input: {
