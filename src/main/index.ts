@@ -9,6 +9,7 @@ import consola from 'consola'
 import sharp from 'sharp'
 import os from 'os'
 import icon from '../../resources/icon.png?asset'
+import { error } from 'console'
 
 let store = new Store()
 
@@ -53,6 +54,10 @@ function createMainWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/main/index.html'))
   }
+  check_setup()
+  
+  get_data_and_communicate_with_gemini()
+  
 }
 
 function createSetupWindow(): void {
@@ -84,9 +89,6 @@ function createSetupWindow(): void {
   }
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   consola.box('Awoolim is starting up...')
   consola.info('App version:', app.getVersion())
@@ -98,31 +100,26 @@ app.whenReady().then(async () => {
 
   electronApp.setAppUserModelId('com.electron')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
   isStarted = os.uptime()
 
-  if (store.get('userData') == undefined) {
-    consola.warn('User data not found, creating setup window')
+  // if (store.get('userData') == undefined) {
+  //   consola.warn('User data not found, creating setup window')
     ipcMain.on('get-permission-state', sendPermissionState)
     ipcMain.on('ask-permission', askPermission)
     ipcMain.on('setup-complete', setupComplete)
     createSetupWindow()
-  } else {
-    consola.success('User data found, loading user data')
-    userData = (await store.get('userData')) as userData
-    consola.debug('User data loaded:', userData)
-    createMainWindow()
-  }
+  // } else {
+  //   consola.success('User data found, loading user data')
+  //   userData = (await store.get('userData')) as userData
+  //   consola.debug('User data loaded:', userData)
+    // createMainWindow()
+  // }
 
-  read_images()
-  ipcMain.on('ping', () => read_images())
-  ipcMain.on('two', () => mmo())
-  ipcMain.on('three', () => three())
+  // tflite 모델 로드 여부 
+  // ipcMain.on('three', () => three())
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -143,7 +140,6 @@ async function sendPermissionState(event: IpcMainEvent): Promise<void> {
   consola.info('Checking camera permission state:', camera)
   event.sender.send('permission-state', camera)
 }
-
 async function askPermission(event: IpcMainEvent): Promise<void> {
   // darwin only method
   if (process.platform == 'darwin') {
@@ -177,27 +173,49 @@ function setupComplete(_event: IpcMainEvent, data: userData): void {
 
   createMainWindow()
 }
-
-async function three(): Promise<void> {
-  //console log how much time is passed since the app started
-  let uptime = os.uptime() - isStarted
-  console.log(`App has been running for ${uptime} seconds`)
-  //console log how much time is passed since the app started in hours, minutes and seconds
-  let hours = Math.floor(uptime / 3600)
-  let minutes = Math.floor((uptime % 3600) / 60)
-  let seconds = Math.floor(uptime % 60)
-  console.log(`App has been running for ${hours} hours, ${minutes} minutes and ${seconds} seconds`)
+async function check_tflite(): Promise<boolean> {
+  try {
+    // 1. .tflite 모델 로드
+    let model = await tflite.loadTFLiteModel(join(__dirname, '../../resources/model/1.tflite'))
+    // 2. ?��?�� ?��?�� ?��?�� (?��: 224x224 RGB ?��미�??)
+    let input = tf.zeros([1, 353, 257, 3])
+    // 3. 추론
+    model.predict(input)
+    return true
+  }
+  catch (error) {
+    console.error('Error loading tflite model:', error)
+    return false
+  }
 }
 
-async function mmo(): Promise<void> {
+async function check_setup(): Promise<void> {
+  if (await check_tflite()) {
+    console.log("tflite model loaded");
+  } else {
+    console.log("Failed to load tflite model");
+    error("Failed to load tflite model");
+  }
+}
+
+async function get_data_and_communicate_with_gemini(): Promise<void> {
+  let send_script = "{print form :  2 integer between 5~100 }\
+  this person is "+userData.age+"old, gender is "+userData.gender+"\
+  this person has these diseases : "+userData.conditions.join(', ')+"\
+  this person is developer, and this person work. Tell me how much time we have to work and rest."
+  let send_gemini = await get_send_gemini(send_script)
+  console.log("send_gemini : ", send_gemini)
+}
+
+async function get_send_gemini(gemini_thing : string): Promise<String> {
   let ai = new GoogleGenAI({ apiKey: 'AIzaSyAzyrPJFxwRD_uvl6rdyjYW0-NjE4MDd-g' })
 
   let response = await ai.models.generateContent({
     model: 'gemini-2.0-flash-001',
     contents:
-      "The user is currently studying on his laptop in bed for 135 minutes. He has a history of cervical disc herniation and turtle neck, and his goal is to reduce his neck pain. He is currently feeling tired, and his last posture feedback was ignored 3 out of 5 times, and the last feedback was not accepted. Today, he maintained good posture 38%, and this week's average is 41%. I wanna rest 10 minutes in every period. How long time is enough for him about one period? 10 minutes? or 1 hour?"
+      gemini_thing
   })
-  console.log(response.text)
+  return response.text || ''
 }
 
 async function read_images(): Promise<void> {
