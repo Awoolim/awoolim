@@ -28,6 +28,7 @@
       $_('setup.permission.title'),
       $_('setup.welcome.title'),
       $_('setup.username.title'),
+      $_('setup.basics.title'),
       $_('setup.details.title'),
       $_('setup.complete.title')
     ]
@@ -35,6 +36,7 @@
       $_('setup.permission.description'),
       $_('setup.welcome.description'),
       $_('setup.username.description'),
+      $_('setup.basics.description'),
       $_('setup.details.description'),
       $_('setup.complete.description')
     ]
@@ -100,14 +102,14 @@
     <div id="contentContainer" class="noblur" bind:this={contentContainer}>
       <div id="information">
         <h1>{title[screen]}</h1>
-        <span>{description[screen]}</span>
+        <span>{@html description[screen]}</span>
       </div>
       <div id="action">
         {#if screen === 0}
           <button id="next" on:click={grantPermission}>
             {$_('default.allow')}
           </button>
-        {:else if 1 <= screen && screen <= 3}
+        {:else if 1 <= screen && screen <= 4}
           {#if screen == 2}
             <input
               type="text"
@@ -116,34 +118,21 @@
             />
           {:else if screen == 3}
             <label>
-              {$_('setup.details.age')}
+              {$_('setup.basics.age')}
               <input type="number" bind:value={userData.age} min="0" />
             </label>
-
-            <label>{$_('setup.details.gender')}</label>
-            <div>
-              <label>
-                <input type="radio" name="gender" value="male" bind:group={userData.gender} />
-                {$_('setup.details.gender_male')}
-              </label>
-              <label>
-                <input type="radio" name="gender" value="female" bind:group={userData.gender} />
-                {$_('setup.details.gender_female')}
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="gender"
-                  value="unspecified"
-                  bind:group={userData.gender}
-                />
-                {$_('setup.details.gender_unspecified')}
-              </label>
-            </div>
-
-            <label>{$_('setup.details.conditions')}</label>
+            <label>
+              {$_('setup.basics.gender')}
+              <select bind:value={userData.gender}>
+                <option value="male">{$_('setup.basics.gender_male')}</option>
+                <option value="female">{$_('setup.basics.gender_female')}</option>
+                <option value="unspecified" selected>{$_('setup.basics.gender_unspecified')}</option
+                >
+              </select>
+            </label>
+          {:else if screen == 4}
             {#each conditions as condition}
-              <label>
+              <label class="narrow">
                 <input type="checkbox" value={condition.value} bind:group={userData.conditions} />
                 {condition.label}
               </label>
@@ -156,7 +145,7 @@
           <button id="next" on:click={nextPage}>
             {$_('default.next')}
           </button>
-        {:else if screen === 4}
+        {:else if screen === 5}
           <button id="next" on:click={setupComplete}>
             {$_('default.complete')}
           </button>
@@ -261,7 +250,7 @@
     opacity: 0;
     transform: scale(0.8) translateY(20px);
     filter: blur(8px);
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.5s ease-out;
     transition-timing-function: ease-in;
   }
 
@@ -285,6 +274,11 @@
     height: 34px;
     padding: 0 10px 0 7px;
     border-radius: 17px;
+    transition: background-color 0.3s ease;
+  }
+
+  #languageDisplay:hover {
+    background-color: rgba(var(--text-color), 0.05);
   }
 
   #languageDisplay img {
@@ -296,7 +290,7 @@
 
   #information > h1 {
     font-size: 2.5em;
-    margin: 0 0 14px 0;
+    margin: 0 0 10px 0;
     font-weight: 400;
   }
 
@@ -324,10 +318,79 @@
     cursor: pointer;
     transition: background-color 0.3s ease;
     box-shadow: 0 0.5em 1em rgba(30, 30, 30, 0.1);
-    margin-top: 1em;
+    margin-top: 3em;
   }
 
   #next:hover {
     background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  input[type='text'],
+  input[type='number'],
+  select {
+    font-size: 1em;
+    background: none;
+    padding: 12px 24px;
+    box-sizing: content-box;
+    border: 1px solid rgba(var(--text-color), 0.2);
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 100vh;
+    color: rgb(var(--text-color));
+    transition: 0.3s ease;
+    box-shadow: 0 0.5em 1em rgba(30, 30, 30, 0.1);
+    width: 10em;
+  }
+
+  input[type='text']:focus,
+  input[type='number']:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(var(--text-color), 0.5);
+  }
+
+  input[type='text']:hover,
+  input[type='number']:hover,
+  select:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  label {
+    width: 20em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1em;
+    font-size: 1em;
+    color: rgb(var(--text-color));
+  }
+
+  label.narrow {
+    width: 15em;
+  }
+
+  input[type='checkbox'] {
+    width: 1.5em;
+    height: 1.5em;
+    margin-right: 1em;
+    appearance: none;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(var(--text-color), 0.2);
+    border-radius: 100vh;
+    transition-duration: 0.3s;
+  }
+
+  input[type='checkbox']:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(var(--text-color), 0.5);
+  }
+
+  input[type='checkbox']:checked {
+    background-color: rgba(var(--text-color), 0.8);
+    border-color: rgba(var(--text-color), 0.5);
+    transition-duration: 0.3s;
+  }
+
+  input[type='checkbox']:checked:hover {
+    background-color: rgba(var(--text-color), 0.5);
+    border-color: rgba(var(--text-color), 0.2);
   }
 </style>
