@@ -284,7 +284,7 @@ async function read_images(imageBuffer: Buffer): Promise<void> {
   let transposed = heatmapTensor.transpose([0, 3, 1, 2])
   let heatmapArray = await transposed.array()
 
-  let [batch, numKeypoints, h, w] = transposed.shape
+  let [_, numKeypoints, h, w] = transposed.shape
   let inputHeight = 353
   let inputWidth = 257
 
