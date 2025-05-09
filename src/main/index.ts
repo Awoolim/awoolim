@@ -9,11 +9,12 @@ import consola from 'consola'
 import sharp from 'sharp'
 import os from 'os'
 import icon from '../../resources/icon.png?asset'
-import { error, time } from 'console'
+import { error } from 'console'
 
 let store = new Store()
 
-let isStarted = 0
+
+let isStarted: number = 0
 
 let userData: userData = {
   language: 'en',
@@ -64,12 +65,13 @@ async function createMainWindow(): Promise<void> {
 
   check_setup()
   
-  let time_do = await get_data_and_communicate_with_gemini()
-  console.log("time_analyze : ", time_do);
+  // let time_do = await get_data_and_communicate_with_gemini()
+  // console.log("time_analyze : ", time_do);
 
 
   ipcMain.on('webcam-frame', async (_event, base64: string) => {
     const imageBuffer = Buffer.from(base64.split(',')[1], 'base64')
+    await check_isPerson(imageBuffer)
     await read_images(imageBuffer)
   })
 
@@ -334,3 +336,38 @@ async function read_images(imageBuffer: Buffer): Promise<void> {
 
   console.log(JSON.stringify(result))
 }
+
+async function check_isPerson(imageBuffer: Buffer): Promise<Boolean> {
+  // 1. .tflite 모델 로드
+  let model = await tflite.loadTFLiteModel(join(__dirname, '../../models/2.tflite'))
+  // 2. ?��?�� ?��?�� ?��?�� (?��: 224x224 RGB ?��미�??)
+  let resizedImageBuffer = await sharp(imageBuffer)
+    .resize(300, 300)
+    .removeAlpha()
+    .raw()
+    .toBuffer()
+
+  let input = tf.tensor(new Uint8Array(resizedImageBuffer), [1, 300, 300, 3], 'int32')
+  // 3. 추론
+  let response = model.predict(input)
+  const boxes = response['TFLite_Detection_PostProcess']
+  const classIds = response['TFLite_Detection_PostProcess:1']
+  const scores = response['TFLite_Detection_PostProcess:2']
+
+  // tensor -> array로 변환
+  const classIdArray = classIds.arraySync()[0] // [1, 10] → [10]
+  const scoreArray = scores.arraySync()[0]     // [1, 10] → [10]
+
+  // 사람 존재 여부 판단 (classId === 0, score > 0.5)
+  let hasPerson = false
+  for (let i = 0; i < classIdArray.length; i++) {
+    if (classIdArray[i] === 0 && scoreArray[i] > 0.5) {
+      hasPerson = true
+      break
+    }
+  }
+
+  return hasPerson
+
+}
+  
